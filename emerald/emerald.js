@@ -24,45 +24,20 @@ var Emerald;
     }
     function fetchJSONFile(path, callback) {
         var httpRequest = new XMLHttpRequest();
-        httpRequest.onreadystatechange = function () {
-            if (httpRequest.readyState === 4) {
-                if (httpRequest.status === 200) {
-                    var data = JSON.parse(httpRequest.responseText);
-                    if (callback)
-                        callback(data);
-                }
-            }
-        };
         httpRequest.open('GET', path, false);
         httpRequest.send();
+        if (httpRequest.status === 200) {
+            var data = JSON.parse(httpRequest.responseText);
+            if (callback)
+                callback(data);
+        }
     }
     function renderTemplate(template, data) {
-        var match = null;
-        var matches = template.match(/{{([a-zA-Z0-9-_:]*?)}}/g);
-        if (matches != null) {
-            for (var _i = 0, matches_1 = matches; _i < matches_1.length; _i++) {
-                var m = matches_1[_i];
-                m = m.replace("{{", "");
-                m = m.replace("}}", "");
-                var rex = RegExp("{{(" + m + ")}}");
-                match = template.match(rex);
-                console.log("match", match[1], data[match[1]]);
-                if (match != null && data[match[1]] != null) {
-                    template = template.replace("{{" + match[1] + "}}", data[match[1]]);
-                }
-            }
-        }
-        //console.log(matches);
-        /*
-        do{
-
-            match = template.match(/{{([a-zA-Z0-9-_:]*?)}}/);
-            if(match != null ){
-                template = template.replace("{{"+match[1]+"}}",data[match[1]]);
-            }
-        }while(match != null);
-        */
-        return template;
+        if (!template)
+            return template;
+        return template.replace(/{{([a-zA-Z0-9-_:]+?)}}/g, function (match, key) {
+            return (data && data[key] !== undefined) ? data[key] : match;
+        });
     }
     /** Returns the nth element of the url */
     function getUrlParam(index) {
@@ -103,7 +78,7 @@ var Emerald;
         ;
     }
     function routeMatch(route) {
-        var route = basepath + route;
+        route = basepath + route;
         var path = window.location.pathname + window.location.search + window.location.hash;
         ////console.log(route);
         ////console.log(path);
@@ -153,15 +128,11 @@ var Emerald;
     Emerald.init = init;
     /** Re-renders an element. */
     function update(element) {
+        if (!element || !element.backup) return;
         var tmp = document.createElement('div');
         tmp.innerHTML = element.backup;
         renderElement(tmp.firstChild);
         element.replaceWith(tmp.firstChild);
-        /*
-        element = tmp.firstChild;
-        //element.outerHTML = element.backup;
-        console.log("ELEMENT0",element);
-        */
     }
     Emerald.update = update;
     function renderElement(element) {
@@ -212,14 +183,10 @@ var Emerald;
         else {
             var client = new XMLHttpRequest();
             client.open('GET', './' + element.getAttribute('template') + '.html', false);
-            client.onreadystatechange = function () {
-                if (client.readyState === XMLHttpRequest.DONE && client.status === 200) {
-                    //if(element.getAttribute('data') == null){
-                    callback(client.responseText);
-                    //}            
-                }
-            };
             client.send();
+            if (client.status === 200) {
+                callback(client.responseText);
+            }
         }
     }
     function getElementData(element, callback) {
@@ -286,9 +253,10 @@ var Emerald;
         Select.prototype.evaluate = function (item, query) {
             var evaluationQuery = query;
             var result;
-            result = query.match(/(NOT )?[A-Z]+( )*?(LIKE|<=|>=|<>|!=|=|<|>)( )*?(((')((\\')|[^'])*('))|([0-9]+))/gi);
+            result = query.match(/(NOT )?[a-z0-9_:]+( )*?(LIKE|<=|>=|<>|!=|=|<|>)( )*?(((')((\\')|[^'])*('))|([0-9]+))/gi);
             if (result == null) {
                 console.error('Evaluation Error: Could not parse:"' + query + '".');
+                return false;
             }
             for (var _i = 0, result_1 = result; _i < result_1.length; _i++) {
                 var evl = result_1[_i];

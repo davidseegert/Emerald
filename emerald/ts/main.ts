@@ -28,44 +28,19 @@ namespace Emerald {
 
     function fetchJSONFile(path, callback) {
         var httpRequest = new XMLHttpRequest();
-        httpRequest.onreadystatechange = function() {
-            if (httpRequest.readyState === 4) {
-                if (httpRequest.status === 200) {
-                    var data = JSON.parse(httpRequest.responseText);
-                    if (callback) callback(data);
-                }
-            }
-        };
         httpRequest.open('GET', path, false);
         httpRequest.send(); 
+        if (httpRequest.status === 200) {
+            var data = JSON.parse(httpRequest.responseText);
+            if (callback) callback(data);
+        }
     }
 
-    function renderTemplate(template,data){
-        var match = null;
-        var matches = template.match(/{{([a-zA-Z0-9-_:]*?)}}/g);
-        if(matches != null){
-            for(let m of matches){
-                m = m.replace("{{","");
-                m = m.replace("}}","");
-                var rex = RegExp("{{("+m+")}}");
-                match = template.match(rex);
-                console.log("match",match[1],data[match[1]]);
-                if(match != null && data[match[1]] != null){
-                    template = template.replace("{{"+match[1]+"}}",data[match[1]]);
-                } 
-            }
-        }
-        //console.log(matches);
-        /*
-        do{
-
-            match = template.match(/{{([a-zA-Z0-9-_:]*?)}}/);
-            if(match != null ){
-                template = template.replace("{{"+match[1]+"}}",data[match[1]]);
-            }
-        }while(match != null);
-        */
-        return template;
+    function renderTemplate(template, data) {
+        if (!template) return template;
+        return template.replace(/{{([a-zA-Z0-9-_:]+?)}}/g, function(match, key) {
+            return (data && data[key] !== undefined) ? data[key] : match;
+        });
     }
 
     /** Returns the nth element of the url */
@@ -108,7 +83,7 @@ namespace Emerald {
 
     export function routeMatch(route){
 
-        var route:any = basepath+route;
+        route = basepath+route;
         var path:any = window.location.pathname+window.location.search+window.location.hash;
 
         ////console.log(route);
@@ -167,6 +142,7 @@ namespace Emerald {
 
     /** Re-renders an element. */
     export function update(element){
+        if(!element || !element.backup) return;
         var tmp = document.createElement('div');
         tmp.innerHTML = element.backup;
         renderElement(tmp.firstChild);
@@ -242,17 +218,10 @@ namespace Emerald {
                 var client = new XMLHttpRequest();
                 
                 client.open('GET', './'+element.getAttribute('template')+'.html',false);
-                client.onreadystatechange = function() {
-                    if(client.readyState === XMLHttpRequest.DONE && client.status === 200) {
-  
-                        
-                        //if(element.getAttribute('data') == null){
-                            callback(client.responseText);
-                        //}            
-                    }
-                }
-                
                 client.send();
+                if(client.status === 200) {
+                    callback(client.responseText);
+                }
             }
         }
 

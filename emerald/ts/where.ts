@@ -25,9 +25,10 @@ namespace Emerald {
         evaluate(item,query):boolean{
             var evaluationQuery = query; 
             var result:any;
-            result = query.match(/(NOT )?[A-Z]+( )*?(LIKE|<=|>=|<>|!=|=|<|>)( )*?(((')((\\')|[^'])*('))|([0-9]+))/gi);
-            if(result == null){
+            result = query.match(/(NOT )?[a-z0-9_:]+( )*?(LIKE|<=|>=|<>|!=|=|<|>)( )*?(((')((\\')|[^'])*('))|([0-9]+))/gi);
+            if (result == null) {
                 console.error('Evaluation Error: Could not parse:"'+query+'".');
+                return false;
             }
             for(let evl of result){
                 var splitted = evl.split(/(LIKE|<=|>=|!=|<>|<|>|=)/);
